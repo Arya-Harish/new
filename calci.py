@@ -20,6 +20,13 @@ def divide_elements(a, b):
     return a / b
 
 
+# Modulus function
+def modulus_values(a, b):
+    if b == 0:
+        return "Error! Modulus by zero."
+    return a % b
+
+
 # Main calculator
 def calculator():
     operations = {
@@ -27,6 +34,7 @@ def calculator():
         "2": ("Subtract", subtract_values),
         "3": ("Multiply", multiply_inputs),
         "4": ("Divide", divide_elements),
+        "5": ("Modulus", modulus_values),
     }
 
     while True:
@@ -35,8 +43,9 @@ def calculator():
         print("2. Subtract")
         print("3. Multiply")
         print("4. Divide")
+        print("5. Modulus")
 
-        choice = input("Enter choice (1/2/3/4): ").strip()
+        choice = input("Enter choice (1/2/3/4/5): ").strip()
         if choice not in operations:
             print("Invalid input. Please choose a valid operation.")
             continue

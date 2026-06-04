@@ -23,23 +23,45 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Build mcp-client
-        working-directory: Transcripts_final/Transcripts/mcp-client
+      - name: Build mcp-client (if present)
         run: |
-          npm ci
-          npm run build --if-present
+          if [ -d "Transcripts_final/Transcripts/mcp-client" ]; then
+            cd "Transcripts_final/Transcripts/mcp-client"
+            npm ci
+            npm run build --if-present
+          elif [ -d "mcp-client" ]; then
+            cd "mcp-client"
+            npm ci
+            npm run build --if-present
+          else
+            echo "mcp-client directory not found, skipping Node build"
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Compile Python app
-        working-directory: Transcripts_final/Transcripts
+      - name: Compile Python files
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          python -m py_compile app.py
+
+          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
+          if [ -f "Transcripts_final/Transcripts/requirements.txt" ]; then pip install -r Transcripts_final/Transcripts/requirements.txt; fi
+
+          ROOT="."
+          if [ -d "Transcripts_final/Transcripts" ]; then ROOT="Transcripts_final/Transcripts"; fi
+
+          found=0
+          while IFS= read -r -d '' f; do
+            found=1
+            echo "Compiling $f"
+            python -m py_compile "$f"
+          done < <(find "$ROOT" -type f -name "*.py" -print0)
+
+          if [ "$found" -eq 0 ]; then
+            echo "No Python files found under $ROOT"
+          fi
 
       - name: Print selected files input
         if: ${{ github.event_name == 'workflow_dispatch' }}

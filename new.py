@@ -1,80 +1,55 @@
-def add_numbers(a: float, b: float) -> float:
-    """Return the sum of two numbers."""
-    return a + b
+from flask import Flask, request, jsonify
 
-def subtract_values(a: float, b: float) -> float:
-    """Return the difference of two numbers."""
-    return a - b
+app = Flask(__name__)
 
-def multiply_inputs(a: float, b: float) -> float:
-    """Return the product of two numbers."""
-    return a * b
-
-def divide_elements(a: float, b: float) -> float:
-    """Return the division of a by b. Handle division by zero."""
-    if b == 0:
-        raise ValueError("Error! Division by zero.")
-    return a / b
-
-def modulus_values(a: float, b: float) -> float:
-    """Return the modulus of a by b. Handle modulus by zero."""
-    if b == 0:
-        raise ValueError("Error! Modulus by zero.")
-    return a % b
-
-def get_operation_choice() -> str:
-    """Prompt user for operation choice and return it."""
-    print("\nSelect operation:")
-    operations = {
-        "1": "Add",
-        "2": "Subtract",
-        "3": "Multiply",
-        "4": "Divide",
-        "5": "Modulus",
-    }
+@app.route('/products', methods=['POST'])
+def upload_products():
+    # Get JSON data from the request
+    data = request.get_json()
     
-    for key, name in operations.items():
-        print(f"{key}. {name}")
+    # Check if the data is a list and has up to 500 products
+    if not isinstance(data, list) or len(data) > 500:
+        return jsonify({'error': 'Invalid input. Please submit a JSON batch of up to 500 products.'}), 400
+
+    errors = []
     
-    choice = input("Enter choice (1/2/3/4/5): ").strip()
-    if choice not in operations:
-        print("Invalid choice. Please choose a valid operation.")
-    
-    return choice
+    # Validate each product in the batch
+    for product in data:
+        if not validate_product(product):
+            errors.append(generate_error(product))
 
-def get_numbers() -> tuple:
-    """Prompt user for two numbers and return them as a tuple."""
-    while True:
-        try:
-            num1 = float(input("Enter first number: "))
-            num2 = float(input("Enter second number: "))
-            return num1, num2
-        except ValueError:
-            print("Invalid input. Please enter numeric values.")
+    if errors:
+        return jsonify({'error': 'Validation failed', 'errors': errors}), 400
 
-def calculator() -> None:
-    """Run a simple calculator that performs various operations."""
-    operations = {
-        "1": add_numbers,
-        "2": subtract_values,
-        "3": multiply_inputs,
-        "4": divide_elements,
-        "5": modulus_values,
-    }
+    result = save_products_atomic(data)
+    return jsonify(result), 200
 
-    while True:
-        choice = get_operation_choice()
-        if choice not in operations:
-            continue
 
-        num1, num2 = get_numbers()
-        result = operations[choice](num1, num2)
-        print(f"Result: {result}")
+def validate_product(product):
+    required_fields = ['ProductID', 'Name', 'Category', 'Price', 'StockQuantity']
+    for field in required_fields:
+        if field not in product:
+            return False
+    return True
 
-        next_calc = input("Do another calculation? (yes/no): ").strip().lower()
-        if next_calc not in {"yes", "y"}:
-            print("Calculator closed.")
-            break
 
-if __name__ == "__main__":
-    calculator()
+def generate_error(product):
+    return f"Product {product.get('ProductID', 'unknown')} is missing required fields."
+
+
+def save_products_atomic(products):
+    # Simulate database save with atomic transaction logic
+    try:
+        # Begin transaction (pseudocode)
+        for product in products:
+            # Insert product into database (pseudocode)
+            pass  # Replace with actual database insert logic
+        # Commit transaction (pseudocode)
+        return {'message': 'Products saved successfully.'}
+    except Exception as e:
+        # Rollback transaction (pseudocode)
+        return {'error': 'Database write failed, no products saved.'}
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
